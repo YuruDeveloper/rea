@@ -499,6 +499,8 @@ void DecompilerWidget::colorsUpdatedSlot()
     if (useAnotationHiglighter != usingAnnotationBasedHighlighting) {
         setHighlighter(useAnotationHiglighter);
     }
+    // The highlight of the current line and of the words keeps the colors from before.
+    updateSelection();
 }
 
 void DecompilerWidget::showDecompilerContextMenu(const QPoint &pt)

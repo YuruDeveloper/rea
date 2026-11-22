@@ -449,6 +449,7 @@ set(QRC_FILES
     themes/qdarkstyle/dark.qrc
     themes/midnight/midnight.qrc
     themes/lightstyle/light.qrc
+    themes/soul/soul.qrc
 )
 
 set(CUTTER_INCLUDE_DIRECTORIES core widgets common plugins menus .)

@@ -38,6 +38,13 @@ const QStringList ColorThemeWorker::cutterSpecificOptions = {
     "gui.background",
     "gui.alt_background",
     "gui.disass_selected",
+    "gui.navbar.edge",
+    "gui.flirt",
+    "gui.item_unsafe",
+    "gui.item_invalid",
+    "gui.tooltip.background",
+    "gui.tooltip.foreground",
+    "graph.trufae",
 };
 
 const QStringList ColorThemeWorker::rizinUnusedOptions = {
@@ -146,26 +153,37 @@ ColorThemeWorker::Theme ColorThemeWorker::getTheme(const QString &themeName) con
         theme = Core()->getTheme();
     }
 
-    ColorFlags colorFlags = ColorFlags::DarkFlag;
-    if (Configuration::relevantThemes.contains(themeName)) {
-        colorFlags = Configuration::relevantThemes[themeName];
-    }
-    if (colorFlags == DualColor) {
-        colorFlags = Config()->windowColorIsDark() ? DarkFlag : LightFlag;
+    const bool customTheme = isCustomTheme(themeName);
+    // A theme that is correct for the two types of interface gets the colors of the interface.
+    const int darkness = Config()->colorThemeDarkness(themeName);
+    ColorFlags colorFlags = Config()->windowColorIsDark() ? DarkFlag : LightFlag;
+    if (darkness == DarkFlag || darkness == LightFlag) {
+        colorFlags = static_cast<ColorFlags>(darkness);
     }
 
+    const QString jumpLineColor = "graph.trufae";
     for (auto &it : cutterSpecificOptions) {
-        theme.insert(it, QColor(Configuration::cutterOptionColors[it][colorFlags]));
+        if (it != jumpLineColor) {
+            theme.insert(it, QColor(Configuration::cutterOptionColors[it][colorFlags]));
+        }
     }
 
-    if (isCustomTheme(themeName)) {
-        QFile src(QDir(customRzThemesLocationPath).filePath(themeName));
-        if (!src.open(QFile::ReadOnly)) {
-            return {};
-        }
+    const QString themeDirectory =
+            customTheme ? customRzThemesLocationPath : standardRzThemesLocationPath;
+    QFile src(QDir(themeDirectory).filePath(themeName));
+    if (customTheme && !src.open(QFile::ReadOnly)) {
+        return {};
+    }
+    // A theme of the program in the system folder can also have "#~" lines.
+    if (src.isOpen() || (!themeDirectory.isEmpty() && src.open(QFile::ReadOnly))) {
         QStringList sl;
         for (auto &line : QString(src.readAll()).split('\n', CUTTER_QT_SKIP_EMPTY_PARTS)) {
-            sl = line.replace("#~", "ec ")
+            // Rizin read the other lines of a system theme already.
+            if (!customTheme && !line.startsWith("#~")) {
+                continue;
+            }
+            sl = line.trimmed()
+                         .replace("#~", "ec ")
                          .replace("rgb:", "#")
                          .split(' ', CUTTER_QT_SKIP_EMPTY_PARTS);
             if (sl.size() != 3 || sl[0][0] == '#') {
@@ -173,6 +191,11 @@ ColorThemeWorker::Theme ColorThemeWorker::getTheme(const QString &themeName) con
             }
             theme.insert(sl[1], QColor(sl[2]));
         }
+    }
+    // The program has no color of its own for the jump lines of the graph. Without a value in
+    // the theme, the lines have the color "other". The lines of the file can change that color.
+    if (!theme.contains(jumpLineColor)) {
+        theme.insert(jumpLineColor, theme.value("other"));
     }
 
     for (auto &key : rizinUnusedOptions) {

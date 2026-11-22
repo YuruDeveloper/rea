@@ -66,6 +66,7 @@ private:
     void loadLightStylesheet();
     void loadDarkStylesheet();
     void loadMidnightStylesheet();
+    void loadSoulStylesheet(bool dusk);
 
     // Asm Options
     void applySavedAsmOptions();
@@ -74,6 +75,12 @@ public:
     static const QList<CutterInterfaceTheme> &cutterInterfaceThemesList();
     static const QHash<QString, ColorFlags> relevantThemes;
     static const QHash<QString, QHash<ColorFlags, QColor>> cutterOptionColors;
+    /// The index of the Paper theme in cutterInterfaceThemesList().
+    static const int defaultInterfaceTheme = 4;
+    /**
+     * @brief Tells if the current interface theme is Paper or Dusk.
+     */
+    bool usesSoulStylesheet();
 
     // Functions
     static Configuration *instance();
@@ -125,7 +132,7 @@ public:
     void setLastThemeOf(const CutterInterfaceTheme &currInterfaceTheme, const QString &theme);
     QString getLastThemeOf(const CutterInterfaceTheme &currInterfaceTheme) const;
     void setInterfaceTheme(int theme);
-    int getInterfaceTheme() { return s.value("ColorPalette", 0).toInt(); }
+    int getInterfaceTheme() { return s.value("ColorPalette", defaultInterfaceTheme).toInt(); }
 
     const CutterInterfaceTheme *getCurrentTheme();
 

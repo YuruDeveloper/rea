@@ -1,0 +1,112 @@
+# The dusk color theme of rea. MakeSoulThemes.py in the project notes wrote this file.
+# Text uses the ink and the second ink only. The other colors are for marks and backgrounds.
+
+ec comment rgb:b5ae9f
+ec usrcmt rgb:b5ae9f
+ec args rgb:ece6da
+ec fname rgb:ece6da
+ec floc rgb:b5ae9f
+ec fline rgb:b5ae9f
+ec flag rgb:ece6da
+ec label rgb:ece6da
+ec help rgb:b5ae9f
+ec flow rgb:b5ae9f
+ec flow2 rgb:b5ae9f
+ec prompt rgb:ece6da
+ec offset rgb:b5ae9f
+ec input rgb:ece6da
+ec invalid rgb:ece6da
+ec other rgb:ece6da
+ec b0x00 rgb:b5ae9f
+ec b0xlo rgb:ece6da
+ec b0x7f rgb:ece6da
+ec b0xhi rgb:ece6da
+ec b0xff rgb:ece6da
+ec math rgb:ece6da
+ec bin rgb:ece6da
+ec btext rgb:ece6da
+ec push rgb:ece6da
+ec pop rgb:ece6da
+ec crypto rgb:ece6da
+ec jmp rgb:ece6da
+ec cjmp rgb:ece6da
+ec call rgb:ece6da
+ec nop rgb:b5ae9f
+ec ret rgb:ece6da
+ec trap rgb:ece6da
+ec ucall rgb:ece6da
+ec ujmp rgb:ece6da
+ec swi rgb:ece6da
+ec cmp rgb:ece6da
+ec reg rgb:ece6da
+ec creg rgb:ece6da
+ec num rgb:ece6da
+ec mov rgb:ece6da
+ec func_var rgb:ece6da
+ec func_var_type rgb:b5ae9f
+ec func_var_addr rgb:b5ae9f
+ec widget_bg rgb:45413b
+ec widget_sel rgb:ece6da
+ec meta rgb:b5ae9f
+ec ai.read rgb:ece6da
+ec ai.write rgb:ece6da
+ec ai.exec rgb:ece6da
+ec ai.seq rgb:b5ae9f
+ec ai.ascii rgb:ece6da
+ec graph.box rgb:918c82
+ec graph.box2 rgb:ece6da
+ec graph.box3 rgb:ece6da
+ec graph.box4 rgb:918c82
+ec graph.true rgb:3dc4ae
+ec graph.false rgb:c56fa6
+ec graph.ujump rgb:ece6da
+ec graph.current rgb:ece6da
+ec graph.traced rgb:b5ae9f
+ec diff.unknown rgb:b5ae9f
+ec diff.new rgb:ece6da
+ec diff.match rgb:b5ae9f
+ec diff.unmatch rgb:ece6da
+ec gui.match.perfect rgb:445c52
+ec gui.match.partial rgb:5f583f
+ec gui.cflow rgb:ece6da
+ec gui.dataoffset rgb:ece6da
+ec gui.background rgb:3a3732
+ec gui.alt_background rgb:45413b
+ec gui.border rgb:918c82
+ec wordhl rgb:5f583f
+ec linehl rgb:45413b
+
+# Colors of the program. Rizin does not read the lines that start with "#~".
+#~gui.background rgb:ff3a3732
+#~gui.alt_background rgb:ff45413b
+#~gui.border rgb:ff918c82
+#~gui.disass_selected rgb:ff3a3732
+#~gui.dataoffset rgb:ffece6da
+#~lineHighlight rgb:ff45413b
+#~wordHighlight rgb:ff5f583f
+#~searchHighlight rgb:ff42515c
+#~searchCurrent rgb:ff445c52
+#~highlightPC rgb:ff4c565e
+#~gui.breakpoint_background rgb:ff5f4750
+#~gui.main rgb:ffece6da
+#~gui.imports rgb:ffb5ae9f
+#~gui.flirt rgb:ffb5ae9f
+#~gui.item_unsafe rgb:ffece6da
+#~gui.item_invalid rgb:ffb5ae9f
+#~graph.trufae rgb:ffece6da
+#~gui.navbar.seek rgb:ffd7372b
+#~gui.navbar.edge rgb:ffece6da
+#~gui.navbar.pc rgb:ffece6da
+#~gui.navbar.err rgb:ff918c82
+#~gui.navbar.unexplored rgb:ff45413b
+#~gui.navbar.code rgb:ff42515c
+#~gui.navbar.data rgb:ff445c52
+#~gui.navbar.str rgb:ff5f4750
+#~gui.navbar.sym rgb:ff4c565e
+#~gui.navbar.import rgb:ff5f583f
+#~gui.navbar.signature rgb:ff534757
+#~gui.overview.node rgb:ff45413b
+#~gui.overview.fill rgb:28ece6da
+#~gui.overview.border rgb:ffece6da
+#~gui.tooltip.background rgb:ff45413b
+#~gui.tooltip.foreground rgb:ffece6da
