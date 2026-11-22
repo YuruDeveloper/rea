@@ -25,8 +25,12 @@ add_library(mcp_cutter MODULE
     McpPlugin.h
     McpServer.cpp
     McpServer.h
+    ToolArguments.cpp
+    ToolArguments.h
     ToolCatalog.cpp
     ToolCatalog.h
+    ToolResult.cpp
+    ToolResult.h
     ToolWorker.cpp
     ToolWorker.h)
 target_link_libraries(mcp_cutter PRIVATE Cutter::Cutter Qt6::Network)

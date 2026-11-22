@@ -1,6 +1,7 @@
 #include "McpMessageHandler.h"
 
 #include "ToolCatalog.h"
+#include "ToolResult.h"
 
 #include <QJsonArray>
 #include <QJsonDocument>
@@ -119,7 +120,7 @@ McpOutcome McpMessageHandler::handleToolCall(const QJsonValue &requestId,
     if (!unknownArguments.isEmpty()) {
         const QString message = "The tool " + toolName
                 + " does not accept these arguments: " + unknownArguments.join(", ");
-        return reply(200, makeResult(requestId, toolError(message)));
+        return reply(200, makeResult(requestId, ToolResult::makeError(message)));
     }
     McpOutcome outcome;
     outcome.kind = McpOutcome::Kind::ToolCall;
@@ -127,13 +128,6 @@ McpOutcome McpMessageHandler::handleToolCall(const QJsonValue &requestId,
     outcome.toolName = toolName;
     outcome.toolArguments = toolArguments.toObject();
     return outcome;
-}
-
-QJsonObject McpMessageHandler::toolError(const QString &message)
-{
-    const QJsonObject block { { "type", "text" }, { "text", message } };
-    const QJsonArray content { block };
-    return QJsonObject { { "content", content }, { "isError", true } };
 }
 
 QJsonObject McpMessageHandler::initializeResult(const QJsonObject &parameters)

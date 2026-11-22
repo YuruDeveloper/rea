@@ -19,17 +19,17 @@ signals:
     void toolFinished(quint64 callId, const QJsonObject &result);
 
 private:
+    static QJsonObject callTool(const QString &name, const QJsonObject &arguments);
     static QJsonObject listFunctions(const QJsonObject &arguments);
     static QMap<quint64, QJsonObject> collectFunctions(const QString &filter);
     static QJsonObject decompileFunction(const QJsonObject &arguments);
-    static RzAnalysisFunction *findFunction(RzCore *core, const QString &target,
+    static QJsonObject disassembleFunction(const QJsonObject &arguments);
+    static QJsonObject findReferences(const QJsonObject &arguments);
+    static QJsonObject listStrings(const QJsonObject &arguments);
+    static QJsonObject listImports(const QJsonObject &arguments);
+    static QJsonObject getCurrentLocation();
+    static RzAnalysisFunction *findFunction(RzCore *core, const QJsonObject &arguments,
                                             QString *errorMessage);
-    static bool readInteger(const QJsonObject &arguments, const QString &name, qint64 minimum,
-                            qint64 maximum, qint64 *value);
-    static QString formatAddress(quint64 address);
-    static QJsonObject makeDataResult(const QJsonObject &data);
-    static QJsonObject makeErrorResult(const QString &message);
-    static QJsonObject makeTextResult(const QString &text, bool isError);
 };
 
 #endif // TOOLWORKER_H
