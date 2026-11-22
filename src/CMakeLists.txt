@@ -54,10 +54,12 @@ set(SOURCES
     common/TempConfig.cpp
     common/PjHandle.cpp
     common/SvgIconEngine.cpp
+    common/ThemeIconEngine.cpp
     common/SyntaxHighlighter.cpp
     widgets/DecompilerWidget.cpp
     widgets/VisualNavbar.cpp
     widgets/GraphView.cpp
+    widgets/GrainOverlay.cpp
     dialogs/preferences/PreferencesDialog.cpp
     dialogs/preferences/AppearanceOptionsWidget.cpp
     dialogs/preferences/GraphOptionsWidget.cpp
@@ -229,10 +231,12 @@ set(HEADER_FILES
     common/TempConfig.h
     common/PjHandle.h
     common/SvgIconEngine.h
+    common/ThemeIconEngine.h
     common/SyntaxHighlighter.h
     widgets/DecompilerWidget.h
     widgets/VisualNavbar.h
     widgets/GraphView.h
+    widgets/GrainOverlay.h
     dialogs/preferences/PreferencesDialog.h
     dialogs/preferences/AppearanceOptionsWidget.h
     dialogs/preferences/PreferenceCategory.h

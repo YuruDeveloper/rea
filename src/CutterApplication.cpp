@@ -78,6 +78,12 @@ CutterApplication::CutterApplication(int &argc, char **argv) : QApplication(argc
         qWarning() << "Cannot load Incosolata-Regular font.";
     }
 
+    for (const char *fontFile : { ":/fonts/D2Coding-Regular.ttf", ":/fonts/D2Coding-Bold.ttf" }) {
+        if (QFontDatabase::addApplicationFont(fontFile) == -1) {
+            qWarning() << "Cannot load the font" << fontFile;
+        }
+    }
+
     // Set QString codec to UTF-8
     QTextCodec::setCodecForLocale(QTextCodec::codecForName("UTF-8"));
 #if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)

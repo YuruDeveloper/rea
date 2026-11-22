@@ -483,7 +483,7 @@ bool Configuration::usesSoulStylesheet()
 
 const QFont Configuration::getBaseFont() const
 {
-    const auto font = s.value("font", QFont("Inconsolata", 11)).value<QFont>();
+    const auto font = s.value("font", QFont("D2Coding", 11)).value<QFont>();
     return font;
 }
 
@@ -555,6 +555,11 @@ void Configuration::setInterfaceTheme(int theme)
     // uses the color theme that the user selected last for it. The loop above wrote the colors
     // of the Light or Dark flag, thus the colors of the theme file must be applied again.
     const QString ownTheme = ownColorTheme(interfaceTheme);
+    // A selected menu item has the color of the text as its background, thus an icon of that
+    // color is not visible there. The menus of Paper and Dusk show text only.
+    static const bool menusHideIcons = QCoreApplication::testAttribute(Qt::AA_DontShowIconsInMenus);
+    QCoreApplication::setAttribute(Qt::AA_DontShowIconsInMenus,
+                                   menusHideIcons || !ownTheme.isEmpty());
     if (!ownTheme.isEmpty()) {
         const QString colorTheme =
                 s.value("lastThemeOf." + interfaceTheme.name, ownTheme).toString();
