@@ -28,7 +28,7 @@
 #define PFMT64o "llo"
 
 // Global information for Cutter
-#define APPNAME "Cutter"
+#define APPNAME "rea"
 
 /**
  * @brief Type to be used for all kinds of addresses/offsets in rizin address space.
