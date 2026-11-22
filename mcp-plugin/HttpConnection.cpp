@@ -5,10 +5,7 @@
 
 namespace {
 
-const qsizetype MaxHeadBytes = 16 * 1024;
-const qsizetype MaxBodyBytes = 1024 * 1024;
 const int ReceiveTimeoutMilliseconds = 30 * 1000;
-const int HeadIsValid = 0;
 
 QByteArray reasonPhrase(int status)
 {
@@ -61,7 +58,6 @@ void HttpConnection::sendResponse(int status, const HeaderList &headers, const Q
         return;
     }
     responded = true;
-    state = State::Done;
     receiveTimer->stop();
 
     QByteArray response;
@@ -79,82 +75,21 @@ void HttpConnection::sendResponse(int status, const HeaderList &headers, const Q
 
 void HttpConnection::readAvailable()
 {
-    if (state == State::Done) {
+    if (responded || parser.status() != HttpRequestParser::Status::NeedsMoreData) {
         socket->readAll();
         return;
     }
-    buffer.append(socket->readAll());
-
-    if (state == State::Head && !readHead()) {
-        return;
-    }
-    if (buffer.size() < contentLength) {
-        return;
-    }
-    request.body = buffer.left(contentLength);
-    buffer.clear();
-    state = State::Done;
-    receiveTimer->stop();
-    emit requestReady(request);
-}
-
-bool HttpConnection::readHead()
-{
-    const qsizetype headEnd = buffer.indexOf("\r\n\r\n");
-    if (headEnd < 0 && buffer.size() <= MaxHeadBytes) {
-        return false;
-    }
-    if (headEnd < 0 || headEnd > MaxHeadBytes) {
-        sendResponse(431, {}, {});
-        return false;
-    }
-    const int headStatus = parseHead(buffer.left(headEnd));
-    if (headStatus != HeadIsValid) {
-        sendResponse(headStatus, {}, {});
-        return false;
-    }
-    buffer.remove(0, headEnd + 4);
-    state = State::Body;
-    if (request.lowerCaseHeaders.value("expect").toLower() == "100-continue") {
+    const HttpRequestParser::Status status = parser.feed(socket->readAll());
+    if (parser.takeContinueRequest()) {
         socket->write("HTTP/1.1 100 Continue\r\n\r\n");
     }
-    return true;
-}
-
-int HttpConnection::parseHead(const QByteArray &head)
-{
-    const QList<QByteArray> lines = head.split('\n');
-    const QList<QByteArray> requestLine = lines.first().trimmed().split(' ');
-    if (requestLine.size() != 3 || !requestLine[2].startsWith("HTTP/1.")) {
-        return 400;
+    if (status == HttpRequestParser::Status::Failed) {
+        sendResponse(parser.failureStatus(), {}, {});
+        return;
     }
-    request.method = requestLine[0];
-    request.target = requestLine[1];
-
-    for (qsizetype i = 1; i < lines.size(); i++) {
-        const QByteArray line = lines[i].trimmed();
-        const qsizetype colon = line.indexOf(':');
-        if (colon <= 0) {
-            return 400;
-        }
-        request.lowerCaseHeaders.insert(line.left(colon).trimmed().toLower(),
-                                        line.mid(colon + 1).trimmed());
+    if (status == HttpRequestParser::Status::NeedsMoreData) {
+        return;
     }
-
-    if (request.lowerCaseHeaders.contains("transfer-encoding")) {
-        return 501;
-    }
-    if (!request.lowerCaseHeaders.contains("content-length")) {
-        return request.method == "POST" ? 411 : HeadIsValid;
-    }
-    bool isNumber = false;
-    const qlonglong length = request.lowerCaseHeaders.value("content-length").toLongLong(&isNumber);
-    if (!isNumber || length < 0) {
-        return 400;
-    }
-    if (length > MaxBodyBytes) {
-        return 413;
-    }
-    contentLength = length;
-    return HeadIsValid;
+    receiveTimer->stop();
+    emit requestReady(parser.request());
 }

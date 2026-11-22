@@ -18,6 +18,8 @@ add_library(mcp_cutter MODULE
     HttpConnection.cpp
     HttpConnection.h
     HttpRequest.h
+    HttpRequestParser.cpp
+    HttpRequestParser.h
     McpMessageHandler.cpp
     McpMessageHandler.h
     McpOutcome.h

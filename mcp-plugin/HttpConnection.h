@@ -2,6 +2,7 @@
 #define HTTPCONNECTION_H
 
 #include "HttpRequest.h"
+#include "HttpRequestParser.h"
 
 #include <QList>
 #include <QObject>
@@ -28,17 +29,9 @@ private slots:
     void readAvailable();
 
 private:
-    enum class State { Head, Body, Done };
-
-    bool readHead();
-    int parseHead(const QByteArray &head);
-
     QTcpSocket *socket;
     QTimer *receiveTimer;
-    State state = State::Head;
-    QByteArray buffer;
-    HttpRequest request;
-    qsizetype contentLength = 0;
+    HttpRequestParser parser;
     bool responded = false;
 };
 
