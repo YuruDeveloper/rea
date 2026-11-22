@@ -24,11 +24,11 @@ function Assert-That {
 }
 
 function Invoke-RelayRun {
-    param([string]$Name, [string]$Directory, [string[]]$InputLines)
+    param([string]$Name, [string]$Directory, [string[]]$InputLines, [int]$SelectedProcessId = 0)
     $Prefix = Join-Path $OutputDirectory $Name
     [IO.File]::WriteAllText("$Prefix.stdin.txt", (($InputLines -join "`n") + "`n"), $Utf8)
     $Process = Start-Process -FilePath $PowerShellProgram -NoNewWindow -Wait -PassThru `
-        -ArgumentList @('-NoProfile', '-File', "`"$RelayScript`"", '-ConnectionDirectory', "`"$Directory`"") `
+        -ArgumentList @('-NoProfile', '-File', "`"$RelayScript`"", '-ConnectionDirectory', "`"$Directory`"", '-ProcessId', $SelectedProcessId) `
         -RedirectStandardInput "$Prefix.stdin.txt" `
         -RedirectStandardOutput "$Prefix.stdout.txt" `
         -RedirectStandardError "$Prefix.stderr.txt"
@@ -93,6 +93,22 @@ Assert-That ($Closed.Replies.Count -eq 2) 'when the connection fails, the relay 
 Assert-That ($Closed.Replies[0].id -eq 'list' -and $Closed.Replies[0].error.message -match 'failed') 'when the connection fails, the relay returns an error for the request'
 Assert-That ($null -eq $Closed.Replies[1].id -and $Closed.Replies[1].error.code -eq -32000) 'when the connection fails, the relay returns an error with the id null for the line that is not JSON'
 Assert-That ($Closed.Errors -notmatch 'check-relay-token' -and ($Closed.Lines -join '') -notmatch 'check-relay-token') 'the relay does not write the token to an output'
+
+$TwoDirectory = Join-Path $OutputDirectory 'connections-two-sessions'
+$OlderProcess = Start-Process -FilePath $PowerShellProgram -ArgumentList @('-NoProfile', '-Command', 'Start-Sleep -Seconds 120') -NoNewWindow -PassThru
+try {
+    Write-ConnectionFile -Directory $TwoDirectory -Id $OlderProcess.Id -Url $ClosedPortUrl -StartedAt ([DateTimeOffset]::UtcNow)
+    Write-ConnectionFile -Directory $TwoDirectory -Id $PID -Url $ClosedPortUrl -StartedAt ([DateTimeOffset]::UtcNow.AddMinutes(1))
+    $Newest = Invoke-RelayRun -Name 'two-sessions-newest' -Directory $TwoDirectory -InputLines @($ToolListLine)
+    Assert-That ($Newest.Errors -match "found 2 sessions and selected process $PID\.") 'with two sessions, the relay selects the session that started last'
+    Assert-That ($Newest.Replies[0].error.message -match "process $PID failed") 'with two sessions, the relay sends the request to the session that started last'
+    $Selected = Invoke-RelayRun -Name 'two-sessions-selected' -Directory $TwoDirectory -InputLines @($ToolListLine) -SelectedProcessId $OlderProcess.Id
+    Assert-That ($Selected.Replies[0].error.message -match "process $($OlderProcess.Id) failed") 'with -ProcessId, the relay sends the request to the selected session'
+    Assert-That ($Selected.Errors -notmatch 'found 2 sessions') 'with -ProcessId, the relay does not use the other session'
+}
+finally {
+    Stop-Process -Id $OlderProcess.Id -Force
+}
 
 if ($ConnectionDirectory) {
     $Session = Invoke-RelayRun -Name 'session' -Directory $ConnectionDirectory -InputLines @($InitializeLine, $InitializedLine, $ToolListLine, $ToolCallLine, 'not json')
