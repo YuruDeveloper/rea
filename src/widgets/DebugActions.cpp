@@ -22,9 +22,9 @@ DebugActions::DebugActions(QToolBar *toolBar, MainWindow *main)
     // setIconSize(QSize(16, 16));
 
     // define icons
-    const QIcon startEmulIcon = QIcon(":/img/icons/play_light_emul.svg");
-    const QIcon startAttachIcon = QIcon(":/img/icons/play_light_attach.svg");
-    const QIcon startRemoteIcon = QIcon(":/img/icons/play_light_remote.svg");
+    const QIcon startEmulIcon = qhelpers::themeIcon(":/img/icons/play_light_emul.svg");
+    const QIcon startAttachIcon = qhelpers::themeIcon(":/img/icons/play_light_attach.svg");
+    const QIcon startRemoteIcon = qhelpers::themeIcon(":/img/icons/play_light_remote.svg");
     const QIcon continueBackIcon = QIcon(":/img/icons/reverse_continue.svg");
     const QIcon stepBackIcon = QIcon(":/img/icons/reverse_step.svg");
     startTraceIcon = QIcon(":/img/icons/start_trace.svg");
@@ -32,7 +32,7 @@ DebugActions::DebugActions(QToolBar *toolBar, MainWindow *main)
     stopIcon = QIcon(":/img/icons/media-stop_light.svg");
     restartIcon = QIcon(":/img/icons/spin_light.svg");
     detachIcon = QIcon(":/img/icons/detach_debugger.svg");
-    startDebugIcon = QIcon(":/img/icons/play_light_debug.svg");
+    startDebugIcon = qhelpers::themeIcon(":/img/icons/play_light_debug.svg");
     continueIcon = QIcon(":/img/icons/media-skip-forward_light.svg");
     suspendIcon = QIcon(":/img/icons/media-suspend_light.svg");
 

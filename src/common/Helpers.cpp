@@ -1,6 +1,7 @@
 #include "common/Helpers.h"
 
 #include "Configuration.h"
+#include "ThemeIconEngine.h"
 
 #include <QAbstractButton>
 #include <QAbstractItemView>
@@ -273,8 +274,15 @@ void setThemeIcons(const QList<QPair<void *, QString>> &supportedIconsNames,
         if (QFile::exists(iconPath + relativeThemeDir + p.second)) {
             iconPath += relativeThemeDir;
         }
-        setter(p.first, QIcon(iconPath + p.second));
+        setter(p.first,
+               Config()->usesSoulStylesheet() ? themeIcon(iconPath + p.second)
+                                              : QIcon(iconPath + p.second));
     }
+}
+
+QIcon themeIcon(const QString &filename)
+{
+    return QIcon(new ThemeIconEngine(filename));
 }
 
 void prependQAction(QAction *action, QMenu *menu)

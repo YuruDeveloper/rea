@@ -54,6 +54,7 @@ set(SOURCES
     common/TempConfig.cpp
     common/PjHandle.cpp
     common/SvgIconEngine.cpp
+    common/ThemeIconEngine.cpp
     common/SyntaxHighlighter.cpp
     widgets/DecompilerWidget.cpp
     widgets/VisualNavbar.cpp
@@ -229,6 +230,7 @@ set(HEADER_FILES
     common/TempConfig.h
     common/PjHandle.h
     common/SvgIconEngine.h
+    common/ThemeIconEngine.h
     common/SyntaxHighlighter.h
     widgets/DecompilerWidget.h
     widgets/VisualNavbar.h

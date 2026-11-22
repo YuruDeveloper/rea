@@ -99,6 +99,13 @@ CUTTER_EXPORT QByteArray applyColorToSvg(const QString &filename, QColor color);
 CUTTER_EXPORT void setThemeIcons(const QList<QPair<void *, QString>> &supportedIconsNames,
                                  const std::function<void(void *, const QIcon &)> &setter);
 
+/**
+ * @brief Makes an icon from an SVG file. In the Paper and Dusk themes the icon has the text color
+ * of the theme, also after a change of the theme. In the other themes it is the usual icon.
+ * @param filename path of the SVG file
+ */
+CUTTER_EXPORT QIcon themeIcon(const QString &filename);
+
 CUTTER_EXPORT void prependQAction(QAction *action, QMenu *menu);
 CUTTER_EXPORT qreal devicePixelRatio(const QPaintDevice *p);
 /**
