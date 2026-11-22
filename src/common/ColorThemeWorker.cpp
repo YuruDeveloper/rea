@@ -38,6 +38,13 @@ const QStringList ColorThemeWorker::cutterSpecificOptions = {
     "gui.background",
     "gui.alt_background",
     "gui.disass_selected",
+    "gui.navbar.edge",
+    "gui.flirt",
+    "gui.item_unsafe",
+    "gui.item_invalid",
+    "gui.tooltip.background",
+    "gui.tooltip.foreground",
+    "graph.trufae",
 };
 
 const QStringList ColorThemeWorker::rizinUnusedOptions = {
@@ -146,19 +153,24 @@ ColorThemeWorker::Theme ColorThemeWorker::getTheme(const QString &themeName) con
         theme = Core()->getTheme();
     }
 
-    ColorFlags colorFlags = ColorFlags::DarkFlag;
-    if (Configuration::relevantThemes.contains(themeName)) {
-        colorFlags = Configuration::relevantThemes[themeName];
-    }
-    if (colorFlags == DualColor) {
-        colorFlags = Config()->windowColorIsDark() ? DarkFlag : LightFlag;
+    const bool customTheme = isCustomTheme(themeName);
+    // A theme that is correct for the two types of interface gets the colors of the interface.
+    const int darkness = Config()->colorThemeDarkness(themeName);
+    ColorFlags colorFlags = Config()->windowColorIsDark() ? DarkFlag : LightFlag;
+    if (darkness == DarkFlag || darkness == LightFlag) {
+        colorFlags = static_cast<ColorFlags>(darkness);
     }
 
     for (auto &it : cutterSpecificOptions) {
+        if (it == "graph.trufae") {
+            // The program has no color of its own for the jump lines of the graph. Without a
+            // value in the theme, the lines have the color "other".
+            theme.insert(it, theme.value("other"));
+            continue;
+        }
         theme.insert(it, QColor(Configuration::cutterOptionColors[it][colorFlags]));
     }
 
-    const bool customTheme = isCustomTheme(themeName);
     const QString themeDirectory =
             customTheme ? customRzThemesLocationPath : standardRzThemesLocationPath;
     QFile src(QDir(themeDirectory).filePath(themeName));
