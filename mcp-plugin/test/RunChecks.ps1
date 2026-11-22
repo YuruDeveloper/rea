@@ -3,7 +3,7 @@ param(
     [Parameter(Mandatory)][string]$Binary,
     [Parameter(Mandatory)][string]$OutputDirectory,
     [string]$PlatformDirectory,
-    [string]$LegacySettingsKey = 'HKCU:\Software\Cutter\Cutter',
+    [string]$LegacySettingsKey,
     [string]$ProgramName = 'rea.exe',
     [int]$StartSeconds = 60
 )
@@ -18,6 +18,7 @@ function Get-FullPath {
 $Platform = 'offscreen'
 $RefusedExitCode = 2
 $ErrorMode = 0x8007
+$FixedSettingsKey = 'HKCU:\Software\Cutter\Cutter'
 $InstallDirectory = Get-FullPath $InstallDirectory
 $Binary = Get-FullPath $Binary
 $OutputDirectory = Get-FullPath $OutputDirectory
@@ -61,6 +62,7 @@ function Start-Child {
     }
     $Start.WorkingDirectory = $WorkingDirectory
     $Start.UseShellExecute = $false
+    $Start.CreateNoWindow = $true
     $Start.RedirectStandardOutput = $true
     $Start.RedirectStandardError = $true
     foreach ($Name in $ChildEnvironment.Keys) {
@@ -99,12 +101,26 @@ foreach ($Required in $Program, $PlatformFile, $Binary) {
         Stop-Refused "This file is missing: $Required"
     }
 }
-if (Test-Path -LiteralPath $LegacySettingsKey) {
-    $LegacyKey = Get-Item -LiteralPath $LegacySettingsKey
-    if ($LegacyKey.ValueCount -gt 0 -or $LegacyKey.SubKeyCount -gt 0) {
-        Stop-Refused ("The registry key $LegacySettingsKey has $($LegacyKey.ValueCount) values and $($LegacyKey.SubKeyCount) subkeys. " +
-            'With an empty profile, the program moves these old settings into the profile and deletes them from the key.')
+$SettingsKeys = foreach ($KeyPath in @($FixedSettingsKey, $LegacySettingsKey) | Where-Object { $_ }) {
+    $Key = if (Test-Path -LiteralPath $KeyPath) { Get-Item -LiteralPath $KeyPath }
+    [pscustomobject]@{
+        Path    = $KeyPath
+        Exists  = [bool]$Key
+        NotAKey = $Key -and $Key -isnot [Microsoft.Win32.RegistryKey]
+        Values  = [int]$Key.ValueCount
+        SubKeys = [int]$Key.SubKeyCount
     }
+}
+$SettingsLines = @($SettingsKeys | ForEach-Object { "settings key $($_.Path) exists=$($_.Exists) values=$($_.Values) subkeys=$($_.SubKeys)" })
+$SettingsLines | Write-Host
+$WrongPaths = @($SettingsKeys | Where-Object { $_.NotAKey })
+if ($WrongPaths.Count -gt 0) {
+    Stop-Refused "These paths are not registry keys: $($WrongPaths.Path -join ', ')"
+}
+$FilledKeys = @($SettingsKeys | Where-Object { $_.Values -gt 0 -or $_.SubKeys -gt 0 })
+if ($FilledKeys.Count -gt 0) {
+    Stop-Refused ("These registry keys contain values or keys: $($FilledKeys.Path -join ', '). " +
+        'With an empty profile, the program moves the old settings of Cutter into the profile and deletes them from the registry.')
 }
 
 New-Item -ItemType Directory -Force $RoamingDirectory, $LocalDirectory | Out-Null
@@ -115,6 +131,7 @@ $Stamp += Get-ChildItem -LiteralPath (Join-Path $InstallDirectory 'plugins\nativ
 $Stamp += "binary=$Binary"
 $Stamp += $ChildEnvironment.Keys | ForEach-Object { "$_=$($ChildEnvironment[$_])" }
 $Stamp += "profile=$ProfileDirectory"
+$Stamp += $SettingsLines
 
 Add-Type -Namespace ReaCheck -Name Native -MemberDefinition '[DllImport("kernel32.dll")] public static extern uint SetErrorMode(uint mode);'
 $PreviousErrorMode = [ReaCheck.Native]::SetErrorMode($ErrorMode)
