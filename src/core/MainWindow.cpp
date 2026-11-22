@@ -46,6 +46,7 @@
 #include "widgets/FlirtWidget.h"
 #include "widgets/FunctionsWidget.h"
 #include "widgets/GlobalsWidget.h"
+#include "widgets/GrainOverlay.h"
 #include "widgets/GraphWidget.h"
 #include "widgets/HeadersWidget.h"
 #include "widgets/HeapDockWidget.h"
@@ -141,6 +142,7 @@ MainWindow::~MainWindow() {}
 void MainWindow::initUI()
 {
     ui->setupUi(this);
+    new GrainOverlay(this);
 
     // Initialize context menu extensions for plugins
     disassemblyContextMenuExtensions = new QMenu(tr("Plugins"), this);
