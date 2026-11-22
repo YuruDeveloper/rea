@@ -59,11 +59,11 @@ int main(int argc, char *argv[])
     qRegisterMetaType<QList<StringDescription>>();
     qRegisterMetaType<QList<FunctionDescription>>();
 
-    QCoreApplication::setOrganizationName("rizin");
+    QCoreApplication::setOrganizationName("rea");
 #ifndef Q_OS_MACOS // don't set on macOS so that it doesn't affect config path there
     QCoreApplication::setOrganizationDomain("rizin.re");
 #endif
-    QCoreApplication::setApplicationName("cutter");
+    QCoreApplication::setApplicationName("rea");
 
     // Importing settings after setting rename, needs separate handling in addition to regular
     // version to version upgrade.

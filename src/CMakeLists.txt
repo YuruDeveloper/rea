@@ -519,7 +519,7 @@ source_group(TREE "${CMAKE_CURRENT_LIST_DIR}" FILES ${CUTTER_SOURCES})
 
 add_executable(Cutter ${CUTTER_SOURCES} ${BINDINGS_SOURCE})
 set_target_properties(Cutter PROPERTIES
-        OUTPUT_NAME cutter
+        OUTPUT_NAME rea
         RUNTIME_OUTPUT_DIRECTORY ..
         PDB_OUTPUT_DIRECTORY ..
         ENABLE_EXPORTS ON

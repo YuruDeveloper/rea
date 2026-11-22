@@ -3,7 +3,7 @@ find_program(WINDEPLOYQT_EXECUTABLE windeployqt HINTS "${_qt_bin_dir}")
 if(NOT WINDEPLOYQT_EXECUTABLE)
 	message(FATAL_ERROR "Failed to find windeployqt")
 endif()
-execute_process(COMMAND "${WINDEPLOYQT_EXECUTABLE}" cutter.exe
+execute_process(COMMAND "${WINDEPLOYQT_EXECUTABLE}" rea.exe
         --plugindir "qtplugins"
         --no-translations # Cutter currently isn't loading Qt translation file
     WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX}
