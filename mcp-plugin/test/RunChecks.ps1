@@ -2,19 +2,42 @@ param(
     [Parameter(Mandatory)][string]$InstallDirectory,
     [Parameter(Mandatory)][string]$Binary,
     [Parameter(Mandatory)][string]$OutputDirectory,
-    [string]$PlatformDirectory = (Join-Path $InstallDirectory 'qtplugins\platforms'),
+    [string]$PlatformDirectory,
+    [string]$LegacySettingsKey = 'HKCU:\Software\Cutter\Cutter',
     [string]$ProgramName = 'rea.exe',
     [int]$StartSeconds = 60
 )
 
 $ErrorActionPreference = 'Stop'
 
+function Get-FullPath {
+    param([string]$Path)
+    return $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($Path)
+}
+
 $Platform = 'offscreen'
 $RefusedExitCode = 2
+$ErrorMode = 0x8007
+$InstallDirectory = Get-FullPath $InstallDirectory
+$Binary = Get-FullPath $Binary
+$OutputDirectory = Get-FullPath $OutputDirectory
+$PlatformDirectory = if ($PlatformDirectory) { Get-FullPath $PlatformDirectory } else { Join-Path $InstallDirectory 'qtplugins\platforms' }
 $Program = Join-Path $InstallDirectory $ProgramName
 $PlatformFile = Join-Path $PlatformDirectory "q$Platform.dll"
-$ProgramArguments = @('-A', '1', "`"$Binary`"")
+$ProfileDirectory = Join-Path $OutputDirectory 'profile'
+$RoamingDirectory = Join-Path $ProfileDirectory 'AppData\Roaming'
+$LocalDirectory = Join-Path $ProfileDirectory 'AppData\Local'
+$CallerDirectory = (Get-Location).ProviderPath
 $PowerShellProgram = (Get-Process -Id $PID).Path
+$ChildEnvironment = [ordered]@{
+    QT_QPA_PLATFORM             = $Platform
+    QT_QPA_PLATFORM_PLUGIN_PATH = $PlatformDirectory
+    USERPROFILE                 = $ProfileDirectory
+    APPDATA                     = $RoamingDirectory
+    LOCALAPPDATA                = $LocalDirectory
+    SLEIGHHOME                  = Join-Path $InstallDirectory 'lib\rizin\plugins\rz_ghidra_sleigh'
+}
+$RemovedVariables = @('REA_MCP_DIR')
 
 function Stop-Refused {
     param([string]$Reason)
@@ -30,15 +53,45 @@ function Get-Stamp {
     return "$Path sha256=$Hash mtime=$($Item.LastWriteTime.ToString('yyyy-MM-dd HH:mm:ss.fff zzz')) size=$($Item.Length)"
 }
 
+function Start-Child {
+    param([string]$FilePath, [string[]]$Arguments, [string]$WorkingDirectory)
+    $Start = [Diagnostics.ProcessStartInfo]::new($FilePath)
+    foreach ($Argument in $Arguments) {
+        $Start.ArgumentList.Add($Argument)
+    }
+    $Start.WorkingDirectory = $WorkingDirectory
+    $Start.UseShellExecute = $false
+    $Start.RedirectStandardOutput = $true
+    $Start.RedirectStandardError = $true
+    foreach ($Name in $ChildEnvironment.Keys) {
+        $Start.Environment[$Name] = $ChildEnvironment[$Name]
+    }
+    foreach ($Name in $RemovedVariables) {
+        [void]$Start.Environment.Remove($Name)
+    }
+    $Process = [Diagnostics.Process]::Start($Start)
+    return [pscustomobject]@{
+        Process = $Process
+        Output  = $Process.StandardOutput.ReadToEndAsync()
+        Error   = $Process.StandardError.ReadToEndAsync()
+    }
+}
+
+function Save-Output {
+    param($Child, [string]$OutputFile, [string]$ErrorFile)
+    [IO.File]::WriteAllText($OutputFile, $Child.Output.Result)
+    [IO.File]::WriteAllText($ErrorFile, $Child.Error.Result)
+}
+
 function Invoke-Check {
     param([string]$Label, [string[]]$Arguments)
     $Log = Join-Path $OutputDirectory "$Label.log"
-    $Check = Start-Process -FilePath $PowerShellProgram -NoNewWindow -Wait -PassThru `
-        -ArgumentList (@('-NoProfile', '-File') + $Arguments) `
-        -RedirectStandardOutput $Log -RedirectStandardError (Join-Path $OutputDirectory "$Label.err.log")
-    Add-Content -Encoding utf8 -LiteralPath $Log "exit=$($Check.ExitCode)"
-    Write-Host "== $Label exit=$($Check.ExitCode) log=$Log"
-    return $Check.ExitCode
+    $Check = Start-Child $PowerShellProgram (@('-NoProfile', '-File') + $Arguments) $CallerDirectory
+    $Check.Process.WaitForExit()
+    Save-Output $Check $Log (Join-Path $OutputDirectory "$Label.err.log")
+    Add-Content -Encoding utf8 -LiteralPath $Log "exit=$($Check.Process.ExitCode)"
+    Write-Host "== $Label exit=$($Check.Process.ExitCode) log=$Log"
+    return $Check.Process.ExitCode
 }
 
 foreach ($Required in $Program, $PlatformFile, $Binary) {
@@ -46,39 +99,32 @@ foreach ($Required in $Program, $PlatformFile, $Binary) {
         Stop-Refused "This file is missing: $Required"
     }
 }
+if (Test-Path -LiteralPath $LegacySettingsKey) {
+    $LegacyKey = Get-Item -LiteralPath $LegacySettingsKey
+    if ($LegacyKey.ValueCount -gt 0 -or $LegacyKey.SubKeyCount -gt 0) {
+        Stop-Refused ("The registry key $LegacySettingsKey has $($LegacyKey.ValueCount) values and $($LegacyKey.SubKeyCount) subkeys. " +
+            'With an empty profile, the program moves these old settings into the profile and deletes them from the key.')
+    }
+}
 
-New-Item -ItemType Directory -Force $OutputDirectory | Out-Null
-$ProfileDirectory = Join-Path $OutputDirectory 'profile'
-$RoamingDirectory = Join-Path $ProfileDirectory 'AppData\Roaming'
-$LocalDirectory = Join-Path $ProfileDirectory 'AppData\Local'
 New-Item -ItemType Directory -Force $RoamingDirectory, $LocalDirectory | Out-Null
-
-Add-Type -Namespace ReaCheck -Name Native -MemberDefinition '[DllImport("kernel32.dll")] public static extern uint SetErrorMode(uint mode);'
-[void][ReaCheck.Native]::SetErrorMode(0x8007)
-
-$env:QT_QPA_PLATFORM = $Platform
-$env:QT_QPA_PLATFORM_PLUGIN_PATH = $PlatformDirectory
-$env:USERPROFILE = $ProfileDirectory
-$env:APPDATA = $RoamingDirectory
-$env:LOCALAPPDATA = $LocalDirectory
-$env:REA_MCP_DIR = $null
-$env:SLEIGHHOME = Join-Path $InstallDirectory 'lib\rizin\plugins\rz_ghidra_sleigh'
 
 $Stamp = @("time=$((Get-Date).ToString('yyyy-MM-dd HH:mm:ss zzz'))", (Get-Stamp $Program), (Get-Stamp $PlatformFile))
 $Stamp += Get-ChildItem -LiteralPath (Join-Path $InstallDirectory 'plugins\native') -Filter '*.dll' -File |
     ForEach-Object { Get-Stamp $_.FullName }
-$Stamp += "QT_QPA_PLATFORM=$env:QT_QPA_PLATFORM"
+$Stamp += "binary=$Binary"
+$Stamp += $ChildEnvironment.Keys | ForEach-Object { "$_=$($ChildEnvironment[$_])" }
 $Stamp += "profile=$ProfileDirectory"
 
-$Process = Start-Process -FilePath $Program -ArgumentList $ProgramArguments -WorkingDirectory $InstallDirectory `
-    -NoNewWindow -PassThru `
-    -RedirectStandardOutput (Join-Path $OutputDirectory 'program.stdout.txt') `
-    -RedirectStandardError (Join-Path $OutputDirectory 'program.stderr.txt')
-$null = $Process.Handle
-$Stamp += "pid=$($Process.Id)"
+Add-Type -Namespace ReaCheck -Name Native -MemberDefinition '[DllImport("kernel32.dll")] public static extern uint SetErrorMode(uint mode);'
+$PreviousErrorMode = [ReaCheck.Native]::SetErrorMode($ErrorMode)
+$Run = $null
 $ExitCodes = @()
 
 try {
+    $Run = Start-Child $Program @('-A', '1', $Binary) $InstallDirectory
+    $Process = $Run.Process
+    $Stamp += "pid=$($Process.Id)"
     $ConnectionFile = $null
     $Deadline = (Get-Date).AddSeconds($StartSeconds)
     while (-not $ConnectionFile -and -not $Process.HasExited -and (Get-Date) -lt $Deadline) {
@@ -91,9 +137,11 @@ try {
         throw "The program ended before the checks, with the exit code $($Process.ExitCode) (0x$($Process.ExitCode.ToString('X8')))."
     }
     $Process.Refresh()
-    $ModuleNames = @($Process.Modules | ForEach-Object { $_.ModuleName.ToLowerInvariant() })
+    $PlatformModules = @($Process.Modules | Where-Object { $_.ModuleName -in 'qoffscreen.dll', 'qwindows.dll' })
+    $ModuleNames = @($PlatformModules | ForEach-Object { $_.ModuleName.ToLowerInvariant() })
     $Stamp += "window handle=$($Process.MainWindowHandle)"
-    $Stamp += "platform modules=$(($ModuleNames | Where-Object { $_ -in 'qoffscreen.dll', 'qwindows.dll' }) -join ',')"
+    $Stamp += "platform modules=$($ModuleNames -join ',')"
+    $Stamp += "platform module files=$(($PlatformModules | ForEach-Object { $_.FileName }) -join ',')"
     if ($Process.MainWindowHandle -ne [IntPtr]::Zero -or $ModuleNames -contains 'qwindows.dll' -or $ModuleNames -notcontains "q$Platform.dll") {
         throw "The program does not use the Qt platform $Platform."
     }
@@ -115,13 +163,17 @@ catch {
     $ExitCodes += 1
 }
 finally {
-    if ($Process.HasExited) {
-        $Stamp += "the program ended with the exit code $($Process.ExitCode)"
-    }
-    else {
-        $Process.Kill()
-        $Process.WaitForExit()
-        $Stamp += "stopped process $($Process.Id)"
+    [void][ReaCheck.Native]::SetErrorMode($PreviousErrorMode)
+    if ($Run) {
+        if ($Run.Process.HasExited) {
+            $Stamp += "the program ended with the exit code $($Run.Process.ExitCode)"
+        }
+        else {
+            $Run.Process.Kill()
+            $Run.Process.WaitForExit()
+            $Stamp += "stopped process $($Run.Process.Id)"
+        }
+        Save-Output $Run (Join-Path $OutputDirectory 'program.stdout.txt') (Join-Path $OutputDirectory 'program.stderr.txt')
     }
     $Stamp | Set-Content -Encoding utf8 -LiteralPath (Join-Path $OutputDirectory 'stamp.txt')
     $Stamp | Write-Host
