@@ -161,14 +161,11 @@ ColorThemeWorker::Theme ColorThemeWorker::getTheme(const QString &themeName) con
         colorFlags = static_cast<ColorFlags>(darkness);
     }
 
+    const QString jumpLineColor = "graph.trufae";
     for (auto &it : cutterSpecificOptions) {
-        if (it == "graph.trufae") {
-            // The program has no color of its own for the jump lines of the graph. Without a
-            // value in the theme, the lines have the color "other".
-            theme.insert(it, theme.value("other"));
-            continue;
+        if (it != jumpLineColor) {
+            theme.insert(it, QColor(Configuration::cutterOptionColors[it][colorFlags]));
         }
-        theme.insert(it, QColor(Configuration::cutterOptionColors[it][colorFlags]));
     }
 
     const QString themeDirectory =
@@ -194,6 +191,11 @@ ColorThemeWorker::Theme ColorThemeWorker::getTheme(const QString &themeName) con
             }
             theme.insert(sl[1], QColor(sl[2]));
         }
+    }
+    // The program has no color of its own for the jump lines of the graph. Without a value in
+    // the theme, the lines have the color "other". The lines of the file can change that color.
+    if (!theme.contains(jumpLineColor)) {
+        theme.insert(jumpLineColor, theme.value("other"));
     }
 
     for (auto &key : rizinUnusedOptions) {
