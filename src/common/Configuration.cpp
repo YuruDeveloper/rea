@@ -559,7 +559,6 @@ void Configuration::setInterfaceTheme(int theme)
         const QString colorTheme =
                 s.value("lastThemeOf." + interfaceTheme.name, ownTheme).toString();
         if (ThemeWorker().isThemeExist(colorTheme)) {
-            setLastThemeOf(interfaceTheme, colorTheme);
             setColorTheme(colorTheme);
         }
     }
@@ -650,6 +649,12 @@ void Configuration::setColorTheme(const QString &theme)
         rz_core_theme_load(core, theme.toUtf8().constData());
         s.setValue("theme", theme);
     }
+    // The Paper and Dusk themes read the last color theme again when the program starts. Thus
+    // each change of the color theme must be in that setting, also a copy or an import.
+    const CutterInterfaceTheme &interfaceTheme = *getCurrentTheme();
+    if (!ownColorTheme(interfaceTheme).isEmpty()) {
+        setLastThemeOf(interfaceTheme, theme);
+    }
 
     const ColorThemeWorker::Theme colorTheme = ThemeWorker().getTheme(theme);
     for (auto it = colorTheme.constBegin(); it != colorTheme.constEnd(); it++) {
@@ -672,6 +677,11 @@ void Configuration::adjustColorThemeDarkness()
 
 int Configuration::colorThemeDarkness(const QString &colorTheme) const
 {
+    // A theme file of the user can have the name of a theme in the list. The list tells nothing
+    // about the colors of that file.
+    if (ThemeWorker().isCustomTheme(colorTheme)) {
+        return DarkFlag | LightFlag;
+    }
     auto flags = relevantThemes.find(colorTheme);
     if (flags != relevantThemes.end()) {
         return static_cast<int>(*flags);
