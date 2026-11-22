@@ -369,7 +369,7 @@ void InitialOptionsDialog::setupAndStartAnalysis()
 
     options.filename = main->getFilename();
     if (!options.filename.isEmpty()) {
-        main->setWindowTitle("Cutter – " + options.filename);
+        main->setWindowTitle(APPNAME " – " + options.filename);
     }
     options.shellcode = this->shellcode;
 

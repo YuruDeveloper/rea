@@ -209,7 +209,7 @@ Note that the paths below may vary depending on your version of Qt and Visual St
    cmake --build build
 
 
-After the compilation completes, the ``cutter.exe`` binary will be available in ``.\build\Debug\cutter.exe``.
+After the compilation completes, the ``rea.exe`` binary will be available in ``.\build\Debug\rea.exe``.
 
 
 
