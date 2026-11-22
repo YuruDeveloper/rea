@@ -3,7 +3,6 @@
 #include "ToolCatalog.h"
 
 #include <cmath>
-#include <limits>
 
 bool ToolArguments::parseAddress(const QString &text, quint64 *address)
 {
@@ -24,8 +23,9 @@ bool ToolArguments::readList(const QJsonObject &arguments, QString *filter, qint
     *filter = filterValue.toString();
     *offset = 0;
     *limit = ToolCatalog::DefaultListLimit;
-    if (!readInteger(arguments, "offset", 0, std::numeric_limits<qint32>::max(), offset)) {
-        *errorMessage = "The argument \"offset\" must be an integer of 0 or more.";
+    if (!readInteger(arguments, "offset", 0, ToolCatalog::MaxListOffset, offset)) {
+        *errorMessage = QString("The argument \"offset\" must be an integer from 0 to %1.")
+                                .arg(ToolCatalog::MaxListOffset);
         return false;
     }
     if (!readInteger(arguments, "limit", 1, ToolCatalog::MaxListLimit, limit)) {

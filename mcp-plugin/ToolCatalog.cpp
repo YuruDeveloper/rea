@@ -104,6 +104,7 @@ QJsonObject ToolCatalog::listSchema(const QString &filterDescription)
     const QJsonObject filterProperty { { "type", "string" }, { "description", filterDescription } };
     const QJsonObject offsetProperty { { "type", "integer" },
                                        { "minimum", 0 },
+                                       { "maximum", MaxListOffset },
                                        { "default", 0 },
                                        { "description",
                                          "Number of entries to skip, after the filter." } };

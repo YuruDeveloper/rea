@@ -19,6 +19,7 @@ public:
 
     static const int DefaultListLimit = 200;
     static const int MaxListLimit = 1000;
+    static const int MaxListOffset = 2147483647;
 
     static QJsonArray definitions();
     static bool contains(const QString &name);

@@ -253,6 +253,17 @@ Assert-That ($ImportFilteredData.imports[0].name.ToLower().Contains($ImportFilte
 $ImportBadLimit = Invoke-Tool -Name 'list-imports-bad-limit' -Tool 'list_imports' -Arguments @{ limit = 0 }
 Assert-That ($ImportBadLimit.Json.result.isError -eq $true) 'list_imports reports a limit that is out of range'
 
+[long]$MaxOffset = 2147483647
+foreach ($ListTool in 'list_functions', 'list_strings', 'list_imports') {
+    $OffsetSchema = ($ToolList.Json.result.tools | Where-Object { $_.name -eq $ListTool }).inputSchema.properties.offset
+    Assert-That ($OffsetSchema.minimum -eq 0 -and $OffsetSchema.maximum -eq $MaxOffset) "review 1020: tools/list gives the minimum and the maximum of the offset of $ListTool"
+    $OffsetAtMaximum = Invoke-Tool -Name "review-1020-$ListTool-offset-maximum" -Tool $ListTool -Arguments @{ offset = $MaxOffset }
+    $OffsetData = (Get-ToolData $OffsetAtMaximum).data
+    Assert-That ($OffsetAtMaximum.Json.result.isError -eq $false -and $OffsetData.offset -eq $MaxOffset -and $OffsetData.total -gt 0) "review 1020: $ListTool accepts the offset $MaxOffset"
+    $OffsetAboveMaximum = Invoke-Tool -Name "review-1020-$ListTool-offset-above-maximum" -Tool $ListTool -Arguments @{ offset = $MaxOffset + 1 }
+    Assert-That ($OffsetAboveMaximum.Json.result.isError -eq $true -and $OffsetAboveMaximum.Json.result.content[0].text.Contains("from 0 to $MaxOffset")) "review 1020: $ListTool reports the offset $($MaxOffset + 1) and gives the maximum"
+}
+
 $Location = Invoke-Tool -Name 'current-location' -Tool 'get_current_location'
 $LocationData = (Get-ToolData $Location).data
 Assert-That ($Location.Json.result.isError -eq $false) 'get_current_location is not an error'
