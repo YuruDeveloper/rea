@@ -2,6 +2,7 @@
 
 #include "common/Configuration.h"
 
+#include <QChildEvent>
 #include <QEvent>
 #include <QImage>
 #include <QPaintEvent>
@@ -28,6 +29,11 @@ GrainOverlay::GrainOverlay(QWidget *parent) : QWidget(parent)
     tile = QPixmap::fromImage(image);
 
     parent->installEventFilter(this);
+    for (QObject *sibling : parent->children()) {
+        if (sibling != this) {
+            sibling->installEventFilter(this);
+        }
+    }
     connect(Config(), &Configuration::interfaceThemeChanged, this, &GrainOverlay::applyTheme);
     applyTheme();
 }
@@ -45,8 +51,12 @@ bool GrainOverlay::eventFilter(QObject *object, QEvent *event)
             setGeometry(parentWidget()->rect());
         } else if (event->type() == QEvent::ChildAdded) {
             // A new child is above the overlay.
+            static_cast<QChildEvent *>(event)->child()->installEventFilter(this);
             raise();
         }
+    } else if (event->type() == QEvent::ZOrderChange && object->parent() == parent()) {
+        // A sibling that calls raise() goes above the overlay.
+        raise();
     }
     return QWidget::eventFilter(object, event);
 }
