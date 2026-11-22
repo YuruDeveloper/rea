@@ -77,6 +77,11 @@ if (WIN32)
         install(FILES "${RIZIN_INSTALL_DIR}/${_exe}.exe" DESTINATION "${CMAKE_INSTALL_BINDIR}")
     endforeach()
     install(DIRECTORY "${RIZIN_INSTALL_DIR}/share" DESTINATION ".")
+    # The color themes of the Paper and Dusk interface themes go into the theme folder of Rizin.
+    install(FILES
+        "${CMAKE_CURRENT_LIST_DIR}/../src/themes/soul/cons/paper"
+        "${CMAKE_CURRENT_LIST_DIR}/../src/themes/soul/cons/dusk"
+        DESTINATION "share/cons")
     install(DIRECTORY "${RIZIN_INSTALL_DIR}/include" DESTINATION "."
         COMPONENT Devel)
     install(DIRECTORY "${RIZIN_INSTALL_DIR}/lib" DESTINATION "."

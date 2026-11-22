@@ -39,9 +39,24 @@ const QHash<QString, ColorFlags> Configuration::relevantThemes = {
     { "white2", DualColor },
 
     { "cutter", LightFlag },    { "matrix", LightFlag }, { "white", LightFlag },
+    { "paper", LightFlag },     { "dusk", DarkFlag },
 };
 static const QString defaultLightColorTheme = "cutter";
 static const QString defaultDarkColorTheme = "ayu";
+
+/**
+ * @brief Gives the color theme that belongs to an interface theme.
+ * @return the name of the color theme, or an empty string if the interface theme has none
+ */
+static QString ownColorTheme(const CutterInterfaceTheme &interfaceTheme)
+{
+    if (interfaceTheme.name == "Paper") {
+        return "paper";
+    } else if (interfaceTheme.name == "Dusk") {
+        return "dusk";
+    }
+    return QString();
+}
 
 const QHash<QString, QHash<ColorFlags, QColor>> Configuration::cutterOptionColors = {
     { "gui.cflow",
@@ -62,6 +77,9 @@ const QHash<QString, QHash<ColorFlags, QColor>> Configuration::cutterOptionColor
       { { DarkFlag, QColor(0xe9, 0x56, 0x56) }, { LightFlag, QColor(0xff, 0x00, 0x00) } } },
     { "gui.navbar.pc",
       { { DarkFlag, QColor(0x42, 0xee, 0xf4) }, { LightFlag, QColor(0x42, 0xee, 0xf4) } } },
+    { "gui.navbar.edge",
+      { { DarkFlag, QColor(0x00, 0x00, 0x00, 0x00) },
+        { LightFlag, QColor(0x00, 0x00, 0x00, 0x00) } } },
     { "gui.navbar.code",
       { { DarkFlag, QColor(0x82, 0xc8, 0x6f) }, { LightFlag, QColor(0x68, 0xe5, 0x45) } } },
     { "gui.navbar.str",
@@ -342,7 +360,7 @@ void Configuration::loadLightStylesheet()
         QTextStream ts(&f);
         const QString stylesheet = ts.readAll();
 
-        QPalette p = qApp->palette();
+        QPalette p = nativePalette;
         p.setColor(QPalette::Text, Qt::black);
         qApp->setPalette(p);
 
@@ -368,7 +386,7 @@ void Configuration::loadDarkStylesheet()
                       "    height: 12px;"
                       "}";
 #endif
-        QPalette p = qApp->palette();
+        QPalette p = nativePalette;
         p.setColor(QPalette::Text, Qt::white);
         qApp->setPalette(p);
         qApp->setStyleSheet(stylesheet);
@@ -385,12 +403,82 @@ void Configuration::loadMidnightStylesheet()
         QTextStream ts(&f);
         const QString stylesheet = ts.readAll();
 
-        QPalette p = qApp->palette();
+        QPalette p = nativePalette;
         p.setColor(QPalette::Text, Qt::white);
         qApp->setPalette(p);
 
         qApp->setStyleSheet(stylesheet);
     }
+}
+
+/**
+ * @brief Loads the Paper theme or the Dusk theme. The two themes use one stylesheet.
+ * @param dusk true for the Dusk theme, false for the Paper theme
+ */
+void Configuration::loadSoulStylesheet(bool dusk)
+{
+    struct Token
+    {
+        const char *name;
+        const char *paper;
+        const char *dusk;
+    };
+    static const Token tokens[] = {
+        { "theme", "paper", "dusk" },       { "paper", "#f1ede4", "#3a3732" },
+        { "paper2", "#e7e2d6", "#45413b" }, { "ink", "#161513", "#ece6da" },
+        { "ink2", "#55524b", "#b5ae9f" },   { "rule", "#7e7c76", "#918c82" },
+        { "idol", "#d7372b", "#d7372b" },
+    };
+
+    QFile f(":soul/soul.qss");
+    if (!f.exists()) {
+        qWarning() << "Can't find the stylesheet of the Paper and Dusk themes.";
+        return;
+    }
+    if (!f.open(QFile::ReadOnly | QFile::Text)) {
+        return;
+    }
+    QTextStream ts(&f);
+    QString stylesheet = ts.readAll();
+    QHash<QString, QColor> colors;
+    for (const Token &token : tokens) {
+        const QString value = dusk ? token.dusk : token.paper;
+        stylesheet.replace(QString("@%1@").arg(token.name), value);
+        colors.insert(token.name, QColor(value));
+    }
+
+    // Widgets that paint without the stylesheet read these colors.
+    QPalette p = nativePalette;
+    p.setColor(QPalette::Window, colors["paper"]);
+    p.setColor(QPalette::WindowText, colors["ink"]);
+    p.setColor(QPalette::Base, colors["paper"]);
+    p.setColor(QPalette::AlternateBase, colors["paper2"]);
+    p.setColor(QPalette::Text, colors["ink"]);
+    p.setColor(QPalette::PlaceholderText, colors["ink2"]);
+    p.setColor(QPalette::Button, colors["paper2"]);
+    p.setColor(QPalette::ButtonText, colors["ink"]);
+    p.setColor(QPalette::BrightText, colors["ink"]);
+    p.setColor(QPalette::ToolTipBase, colors["paper2"]);
+    p.setColor(QPalette::ToolTipText, colors["ink"]);
+    p.setColor(QPalette::Highlight, colors["ink"]);
+    p.setColor(QPalette::HighlightedText, colors["paper"]);
+    p.setColor(QPalette::Link, colors["ink"]);
+    p.setColor(QPalette::LinkVisited, colors["ink2"]);
+    p.setColor(QPalette::Light, colors["paper"]);
+    p.setColor(QPalette::Midlight, colors["paper2"]);
+    p.setColor(QPalette::Mid, colors["rule"]);
+    p.setColor(QPalette::Dark, colors["rule"]);
+    p.setColor(QPalette::Shadow, colors["ink"]);
+    p.setColor(QPalette::Disabled, QPalette::WindowText, colors["rule"]);
+    p.setColor(QPalette::Disabled, QPalette::Text, colors["rule"]);
+    p.setColor(QPalette::Disabled, QPalette::ButtonText, colors["rule"]);
+    qApp->setPalette(p);
+    qApp->setStyleSheet(stylesheet);
+}
+
+bool Configuration::usesSoulStylesheet()
+{
+    return !ownColorTheme(*getCurrentTheme()).isEmpty();
 }
 
 const QFont Configuration::getBaseFont() const
@@ -451,6 +539,10 @@ void Configuration::setInterfaceTheme(int theme)
         loadMidnightStylesheet();
     } else if (interfaceTheme.name == "Light") {
         loadLightStylesheet();
+    } else if (interfaceTheme.name == "Paper") {
+        loadSoulStylesheet(false);
+    } else if (interfaceTheme.name == "Dusk") {
+        loadSoulStylesheet(true);
     } else {
         loadNativeStylesheet();
     }
@@ -459,6 +551,18 @@ void Configuration::setInterfaceTheme(int theme)
         setColor(it.key(), it.value()[interfaceTheme.flag]);
     }
 
+    // An interface theme with its own color theme starts with that color theme. After that, it
+    // uses the color theme that the user selected last for it. The loop above wrote the colors
+    // of the Light or Dark flag, thus the colors of the theme file must be applied again.
+    const QString ownTheme = ownColorTheme(interfaceTheme);
+    if (!ownTheme.isEmpty()) {
+        const QString colorTheme =
+                s.value("lastThemeOf." + interfaceTheme.name, ownTheme).toString();
+        if (ThemeWorker().isThemeExist(colorTheme)) {
+            setLastThemeOf(interfaceTheme, colorTheme);
+            setColorTheme(colorTheme);
+        }
+    }
     adjustColorThemeDarkness();
 
     emit interfaceThemeChanged();
@@ -595,7 +699,9 @@ const QList<CutterInterfaceTheme> &Configuration::cutterInterfaceThemesList()
         { "Native", Configuration::nativeWindowIsDark() ? DarkFlag : LightFlag },
         { "Dark", DarkFlag },
         { "Midnight", DarkFlag },
-        { "Light", LightFlag }
+        { "Light", LightFlag },
+        { "Paper", LightFlag },
+        { "Dusk", DarkFlag }
     };
     return list;
 }

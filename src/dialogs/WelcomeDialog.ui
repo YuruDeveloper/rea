@@ -218,6 +218,16 @@
              <string>Light Theme</string>
             </property>
            </item>
+           <item>
+            <property name="text">
+             <string>Paper Theme</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>Dusk Theme</string>
+            </property>
+           </item>
           </widget>
          </item>
          <item>

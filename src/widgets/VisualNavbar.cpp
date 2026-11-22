@@ -325,9 +325,14 @@ void VisualNavbar::drawCursor(RVA addr, QColor color, QGraphicsRectItem *&graphi
     if (std::isnan(cursorX)) {
         return;
     }
-    // Subtract 1 so the 2px wide cursor is centered
-    graphicsItem = new QGraphicsRectItem(cursorX - 1, 0, 2, navbarHeight);
-    graphicsItem->setPen(Qt::NoPen);
+    // A color theme can give the cursor an edge, for a cursor color with low contrast.
+    const QColor edge = Config()->getColor("gui.navbar.edge");
+    const bool hasEdge = edge.alpha() > 0;
+    // The cursor with an edge is wider, because the edge hides a part of the cursor color.
+    const double cursorWidth = hasEdge ? 4 : 2;
+    // Subtract half of the width so the cursor is centered
+    graphicsItem = new QGraphicsRectItem(cursorX - cursorWidth / 2, 0, cursorWidth, navbarHeight);
+    graphicsItem->setPen(hasEdge ? QPen(edge, 1) : QPen(Qt::NoPen));
     graphicsItem->setBrush(QBrush(color));
     graphicsScene->addItem(graphicsItem);
 }

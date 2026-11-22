@@ -78,13 +78,21 @@ DisassemblyWidget::DisassemblyWidget(MainWindow *main)
 
     // Behave like all widgets: highlight on focus and hover
     connect(qApp, &QApplication::focusChanged, this, [this](QWidget *, QWidget *now) {
-        const QColor borderColor = this == now ? palette().color(QPalette::Highlight)
-                                               : palette().color(QPalette::WindowText).darker();
+        QColor borderColor = this == now ? palette().color(QPalette::Highlight)
+                                         : palette().color(QPalette::WindowText).darker();
+        QColor hoverColor = palette().color(QPalette::Highlight);
+        if (Config()->usesSoulStylesheet()) {
+            // The Paper and Dusk themes draw no outline around a panel. A thin line shows the
+            // focus, and a panel without the focus has a line in the color of the background.
+            borderColor =
+                    this == now ? palette().color(QPalette::Mid) : palette().color(QPalette::Base);
+            hoverColor = palette().color(QPalette::Mid);
+        }
         widget()->setStyleSheet(QString("QSplitter { border: %1px solid %2 } \n"
                                         "QSplitter:hover { border: %1px solid %3 } \n")
                                         .arg(devicePixelRatio())
                                         .arg(borderColor.name())
-                                        .arg(palette().color(QPalette::Highlight).name()));
+                                        .arg(hoverColor.name()));
     });
 
     splitter->setFrameShape(QFrame::Box);

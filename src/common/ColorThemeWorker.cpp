@@ -158,14 +158,23 @@ ColorThemeWorker::Theme ColorThemeWorker::getTheme(const QString &themeName) con
         theme.insert(it, QColor(Configuration::cutterOptionColors[it][colorFlags]));
     }
 
-    if (isCustomTheme(themeName)) {
-        QFile src(QDir(customRzThemesLocationPath).filePath(themeName));
-        if (!src.open(QFile::ReadOnly)) {
-            return {};
-        }
+    const bool customTheme = isCustomTheme(themeName);
+    const QString themeDirectory =
+            customTheme ? customRzThemesLocationPath : standardRzThemesLocationPath;
+    QFile src(QDir(themeDirectory).filePath(themeName));
+    if (customTheme && !src.open(QFile::ReadOnly)) {
+        return {};
+    }
+    // A theme of the program in the system folder can also have "#~" lines.
+    if (src.isOpen() || (!themeDirectory.isEmpty() && src.open(QFile::ReadOnly))) {
         QStringList sl;
         for (auto &line : QString(src.readAll()).split('\n', CUTTER_QT_SKIP_EMPTY_PARTS)) {
-            sl = line.replace("#~", "ec ")
+            // Rizin read the other lines of a system theme already.
+            if (!customTheme && !line.startsWith("#~")) {
+                continue;
+            }
+            sl = line.trimmed()
+                         .replace("#~", "ec ")
                          .replace("rgb:", "#")
                          .split(' ', CUTTER_QT_SKIP_EMPTY_PARTS);
             if (sl.size() != 3 || sl[0][0] == '#') {
