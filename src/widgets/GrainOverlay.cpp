@@ -53,6 +53,8 @@ bool GrainOverlay::eventFilter(QObject *object, QEvent *event)
             // A new child is above the overlay.
             static_cast<QChildEvent *>(event)->child()->installEventFilter(this);
             raise();
+        } else if (event->type() == QEvent::ChildRemoved) {
+            static_cast<QChildEvent *>(event)->child()->removeEventFilter(this);
         }
     } else if (event->type() == QEvent::ZOrderChange && object->parent() == parent()) {
         // A sibling that calls raise() goes above the overlay.
