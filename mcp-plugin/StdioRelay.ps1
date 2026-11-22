@@ -6,7 +6,8 @@ param(
 $ErrorActionPreference = 'Stop'
 
 if (-not $ConnectionDirectory) {
-    $ConnectionDirectory = Join-Path $env:LOCALAPPDATA 'rizin\cutter\mcp'
+    $LocalDataDirectory = [Environment]::GetFolderPath('LocalApplicationData', 'DoNotVerify')
+    $ConnectionDirectory = Join-Path $LocalDataDirectory 'rea\rea\mcp'
 }
 
 $Utf8 = [Text.UTF8Encoding]::new($false)

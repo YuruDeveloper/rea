@@ -1,6 +1,7 @@
 param(
     [Parameter(Mandatory)][string]$OutputDirectory,
-    [string]$ConnectionDirectory
+    [string]$ConnectionDirectory,
+    [switch]$DefaultSession
 )
 
 $ErrorActionPreference = 'Stop'
@@ -27,11 +28,22 @@ function Invoke-RelayRun {
     param([string]$Name, [string]$Directory, [string[]]$InputLines, [int]$SelectedProcessId = 0)
     $Prefix = Join-Path $OutputDirectory $Name
     [IO.File]::WriteAllText("$Prefix.stdin.txt", (($InputLines -join "`n") + "`n"), $Utf8)
-    $Process = Start-Process -FilePath $PowerShellProgram -NoNewWindow -Wait -PassThru `
-        -ArgumentList @('-NoProfile', '-File', "`"$RelayScript`"", '-ConnectionDirectory', "`"$Directory`"", '-ProcessId', $SelectedProcessId) `
-        -RedirectStandardInput "$Prefix.stdin.txt" `
-        -RedirectStandardOutput "$Prefix.stdout.txt" `
-        -RedirectStandardError "$Prefix.stderr.txt"
+    $Arguments = @('-NoProfile', '-File', "`"$RelayScript`"", '-ProcessId', $SelectedProcessId)
+    if ($Directory) {
+        $Arguments += @('-ConnectionDirectory', "`"$Directory`"")
+    }
+    $SavedDirectory = $env:REA_MCP_DIR
+    $env:REA_MCP_DIR = $null
+    try {
+        $Process = Start-Process -FilePath $PowerShellProgram -NoNewWindow -Wait -PassThru `
+            -ArgumentList $Arguments `
+            -RedirectStandardInput "$Prefix.stdin.txt" `
+            -RedirectStandardOutput "$Prefix.stdout.txt" `
+            -RedirectStandardError "$Prefix.stderr.txt"
+    }
+    finally {
+        $env:REA_MCP_DIR = $SavedDirectory
+    }
     $OutputLines = @([IO.File]::ReadAllLines("$Prefix.stdout.txt", $Utf8) | Where-Object { $_ })
     return [pscustomobject]@{
         ExitCode = $Process.ExitCode
@@ -74,6 +86,15 @@ $DeadProcess = Start-Process -FilePath $PowerShellProgram -ArgumentList @('-NoPr
 Write-ConnectionFile -Directory $DeadDirectory -Id $DeadProcess.Id -Url $ClosedPortUrl -StartedAt $Now
 $Dead = Invoke-RelayRun -Name 'dead-process' -Directory $DeadDirectory -InputLines @($ToolListLine)
 Assert-That ($Dead.Replies.Count -eq 1 -and $Dead.Replies[0].error.message -match '^No session is open') 'the relay skips the connection file of a process that ended'
+
+$MainSource = [IO.File]::ReadAllText((Join-Path (Split-Path (Split-Path $PSScriptRoot)) 'src\Main.cpp'))
+$OrganizationName = [regex]::Match($MainSource, 'setOrganizationName\("([^"]+)"\)').Groups[1].Value
+$ApplicationName = [regex]::Match($MainSource, 'setApplicationName\("([^"]+)"\)').Groups[1].Value
+$LocalDataDirectory = [Environment]::GetFolderPath('LocalApplicationData', 'DoNotVerify')
+$DefaultDirectory = Join-Path $LocalDataDirectory "$OrganizationName\$ApplicationName\mcp"
+$Default = Invoke-RelayRun -Name 'default-directory' -Directory '' -InputLines @($ToolListLine) -SelectedProcessId $DeadProcess.Id
+Assert-That ($OrganizationName -and $ApplicationName) 'the file src/Main.cpp gives the organization name and the program name'
+Assert-That ($Default.Replies.Count -eq 1 -and "$($Default.Replies[0].error.message)".EndsWith("The connection folder is $DefaultDirectory")) 'without -ConnectionDirectory and REA_MCP_DIR, the relay uses the data folder of the program that src/Main.cpp names'
 
 $ReusedDirectory = Join-Path $OutputDirectory 'connections-reused'
 Write-ConnectionFile -Directory $ReusedDirectory -Id $PID -Url $ClosedPortUrl -StartedAt $OwnStart.AddMinutes(-10)
@@ -122,6 +143,15 @@ if ($ConnectionDirectory) {
 }
 else {
     Write-Host 'skip  the checks with a session, because -ConnectionDirectory was not given'
+}
+
+if ($DefaultSession) {
+    $Found = Invoke-RelayRun -Name 'default-session' -Directory '' -InputLines @($InitializeLine, $InitializedLine, $ToolListLine)
+    Assert-That ($Found.Replies.Count -eq 2 -and $Found.Replies[0].result.serverInfo.name -eq 'rea-mcp') 'without -ConnectionDirectory and REA_MCP_DIR, the relay finds the session in the default folder of the server'
+    Assert-That ($Found.Replies.Count -eq 2 -and @($Found.Replies[1].result.tools).Count -gt 0) 'without -ConnectionDirectory and REA_MCP_DIR, the relay returns the tool list'
+}
+else {
+    Write-Host 'skip  the checks with a session in the default folder, because -DefaultSession was not given'
 }
 
 if ($script:Failures.Count -gt 0) {
