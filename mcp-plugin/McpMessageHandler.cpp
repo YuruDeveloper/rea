@@ -114,12 +114,26 @@ McpOutcome McpMessageHandler::handleToolCall(const QJsonValue &requestId,
         return reply(200,
                      makeError(requestId, InvalidParameters, "The arguments are not an object"));
     }
+    const QStringList unknownArguments =
+            ToolCatalog::unknownArguments(toolName, toolArguments.toObject());
+    if (!unknownArguments.isEmpty()) {
+        const QString message = "The tool " + toolName
+                + " does not accept these arguments: " + unknownArguments.join(", ");
+        return reply(200, makeResult(requestId, toolError(message)));
+    }
     McpOutcome outcome;
     outcome.kind = McpOutcome::Kind::ToolCall;
     outcome.requestId = requestId;
     outcome.toolName = toolName;
     outcome.toolArguments = toolArguments.toObject();
     return outcome;
+}
+
+QJsonObject McpMessageHandler::toolError(const QString &message)
+{
+    const QJsonObject block { { "type", "text" }, { "text", message } };
+    const QJsonArray content { block };
+    return QJsonObject { { "content", content }, { "isError", true } };
 }
 
 QJsonObject McpMessageHandler::initializeResult(const QJsonObject &parameters)

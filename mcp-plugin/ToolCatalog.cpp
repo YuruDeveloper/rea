@@ -62,6 +62,26 @@ bool ToolCatalog::contains(const QString &name)
     return name == ListFunctions || name == DecompileFunction;
 }
 
+QStringList ToolCatalog::unknownArguments(const QString &name, const QJsonObject &arguments)
+{
+    QJsonObject properties;
+    const QJsonArray tools = definitions();
+    for (const QJsonValue &tool : tools) {
+        if (tool.toObject().value("name").toString() == name) {
+            properties =
+                    tool.toObject().value("inputSchema").toObject().value("properties").toObject();
+        }
+    }
+    QStringList unknownKeys;
+    const QStringList keys = arguments.keys();
+    for (const QString &key : keys) {
+        if (!properties.contains(key)) {
+            unknownKeys.append(key);
+        }
+    }
+    return unknownKeys;
+}
+
 QJsonObject ToolCatalog::readOnlyTool(const QString &name, const QString &title,
                                       const QString &description, const QJsonObject &inputSchema)
 {

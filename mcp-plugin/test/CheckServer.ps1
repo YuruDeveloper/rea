@@ -114,6 +114,21 @@ $FilteredData = Get-ToolData $Filtered
 Assert-That (@($FilteredData.data.functions).Count -eq 1) 'list_functions obeys limit'
 Assert-That ($FilteredData.data.total -lt $FunctionData.data.total) 'list_functions obeys filter'
 
+$MisspelledKey = Invoke-Exchange -Name 'review-1015-misspelled-key' -Body '{"jsonrpc":"2.0","id":15,"method":"tools/call","params":{"name":"list_functions","arguments":{"filter":"main","limti":1}}}'
+Assert-That ($MisspelledKey.Json.result.isError -eq $true) 'review 1015: list_functions reports the key limti, which the schema does not have'
+Assert-That ($MisspelledKey.Json.result.content[0].text -match 'limti') 'review 1015: the tool error names the key limti'
+Assert-That ($MisspelledKey.Json.result.content[0].text -notmatch 'dataNotice') 'review 1015: the tool error contains no data from the binary'
+
+$CorrectKey = Invoke-Exchange -Name 'review-1015-correct-key' -Body '{"jsonrpc":"2.0","id":16,"method":"tools/call","params":{"name":"list_functions","arguments":{"filter":"main","limit":1}}}'
+Assert-That ($CorrectKey.Json.result.isError -eq $false) 'review 1015: list_functions accepts the keys filter and limit'
+Assert-That (@((Get-ToolData $CorrectKey).data.functions).Count -eq 1) 'review 1015: list_functions with the limit 1 returns one function'
+
+$DecompileExtraKey = Invoke-Exchange -Name 'review-1015-decompile-extra-key' -Body (@{
+        jsonrpc = '2.0'; id = 17; method = 'tools/call'
+        params  = @{ name = 'decompile_function'; arguments = @{ function = $ExpectedFunction; limit = 1 } }
+    } | ConvertTo-Json -Depth 5 -Compress)
+Assert-That ($DecompileExtraKey.Json.result.isError -eq $true) 'review 1015: decompile_function reports a key that the schema does not have'
+
 $Decompile = Invoke-Exchange -Name 'decompile-main' -Body (@{
         jsonrpc = '2.0'; id = 5; method = 'tools/call'
         params  = @{ name = 'decompile_function'; arguments = @{ function = $ExpectedFunction } }

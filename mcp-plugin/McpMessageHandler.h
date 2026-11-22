@@ -18,6 +18,7 @@ private:
     static McpOutcome handleRequest(const QJsonValue &requestId, const QString &method,
                                     const QJsonObject &parameters);
     static McpOutcome handleToolCall(const QJsonValue &requestId, const QJsonObject &parameters);
+    static QJsonObject toolError(const QString &message);
     static QJsonObject initializeResult(const QJsonObject &parameters);
 };
 
