@@ -483,7 +483,7 @@ bool Configuration::usesSoulStylesheet()
 
 const QFont Configuration::getBaseFont() const
 {
-    const auto font = s.value("font", QFont("Inconsolata", 11)).value<QFont>();
+    const auto font = s.value("font", QFont("D2Coding", 11)).value<QFont>();
     return font;
 }
 
