@@ -467,8 +467,8 @@ QTreeView::item:selected, QListView::item:selected, QTableView::item:selected {
 
 QTreeView::item:selected:!active, QListView::item:selected:!active,
 QTableView::item:selected:!active {
-    background-color: @paper2@;
-    color: @ink@;
+    background-color: @ink2@;
+    color: @paper@;
 }
 
 QTreeView::branch {
@@ -480,7 +480,7 @@ QTreeView::branch:selected {
 }
 
 QTreeView::branch:selected:!active {
-    background-color: @paper2@;
+    background-color: @ink2@;
 }
 
 QTreeView::branch:has-children:!has-siblings:closed,
@@ -493,13 +493,13 @@ QTreeView::branch:open:has-children:has-siblings {
     image: url(:/soul/@theme@/branch_open.svg);
 }
 
-QTreeView::branch:has-children:!has-siblings:closed:selected:active,
-QTreeView::branch:closed:has-children:has-siblings:selected:active {
+QTreeView::branch:has-children:!has-siblings:closed:selected,
+QTreeView::branch:closed:has-children:has-siblings:selected {
     image: url(:/soul/@theme@/branch_closed_selected.svg);
 }
 
-QTreeView::branch:open:has-children:!has-siblings:selected:active,
-QTreeView::branch:open:has-children:has-siblings:selected:active {
+QTreeView::branch:open:has-children:!has-siblings:selected,
+QTreeView::branch:open:has-children:has-siblings:selected {
     image: url(:/soul/@theme@/branch_open_selected.svg);
 }
 
