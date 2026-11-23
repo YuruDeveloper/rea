@@ -37,3 +37,4 @@ add_library(mcp_cutter MODULE
     ToolWorker.h)
 target_link_libraries(mcp_cutter PRIVATE Cutter::Cutter Qt6::Network)
 install(TARGETS mcp_cutter DESTINATION "${CUTTER_INSTALL_PLUGDIR}")
+install(FILES StdioRelay.ps1 DESTINATION "mcp")
